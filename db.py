@@ -373,6 +373,59 @@ def set_position(username: str, market_id: str, yes_shares: float, no_shares: fl
         )
 
 
+def market_trades(market_id: str):
+    """Tutti i trade di un mercato, con id (per la gestione admin)."""
+    with conn() as c:
+        return c.execute(
+            """SELECT id, ts, username, side, shares, cost, price_yes_after
+               FROM trades WHERE market_id=? ORDER BY id DESC""",
+            (market_id,),
+        ).fetchall()
+
+
+def delete_trade(trade_id: int) -> None:
+    """Cancella un trade STORNANDONE gli effetti, cosi' saldo/posizioni/quote
+    restano coerenti (come se il trade non fosse mai avvenuto)."""
+    with conn() as c:
+        t = c.execute("SELECT * FROM trades WHERE id=?", (trade_id,)).fetchone()
+        if not t:
+            raise ValueError("trade non trovato")
+        mid, user = t["market_id"], t["username"]
+        side = t["side"].upper()
+        shares, cost = t["shares"], t["cost"]
+
+        # storno della quota di mercato (q era stato spostato di +shares sul lato)
+        qcol = "q_yes" if side == "YES" else "q_no"
+        c.execute(f"UPDATE markets SET {qcol} = {qcol} - ? WHERE id=?", (shares, mid))
+        # rimborso del costo (era stato sottratto al saldo)
+        c.execute("UPDATE balances SET balance = balance + ? WHERE username=?", (cost, user))
+        # storno della posizione
+        pcol = "yes_shares" if side == "YES" else "no_shares"
+        c.execute(
+            f"UPDATE positions SET {pcol} = {pcol} - ? WHERE username=? AND market_id=?",
+            (shares, user, mid),
+        )
+        c.execute("DELETE FROM trades WHERE id=?", (trade_id,))
+
+
+def set_market_price(market_id: str, p_yes: float) -> None:
+    """Imposta la chance YES del mercato (override admin).
+
+    Nel modello LMSR il prezzo dipende da q_yes/q_no e dalla liquidita' b:
+    scegliamo q_yes = b*ln(p/(1-p)), q_no = 0, che da' esattamente price_yes = p.
+    Non tocca i token gia' posseduti dagli utenti.
+    """
+    import math
+    p = min(max(float(p_yes), 0.001), 0.999)
+    with conn() as c:
+        m = c.execute("SELECT liquidity FROM markets WHERE id=?", (market_id,)).fetchone()
+        if not m:
+            raise ValueError("mercato non trovato")
+        b = m["liquidity"]
+        q_yes = b * math.log(p / (1.0 - p))
+        c.execute("UPDATE markets SET q_yes=?, q_no=0 WHERE id=?", (q_yes, market_id))
+
+
 def market_stats(market_id: str):
     with conn() as c:
         row = c.execute(

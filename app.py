@@ -704,13 +704,18 @@ def get(sess, err: str = "", ok: str = ""):
             Td(f"{p_yes*100:.1f}% / {(1-p_yes)*100:.1f}%"),
             Td(stats["n_trades"]),
             Td(
-                Form(
-                    Button("Elimina", type="submit",
-                           cls="contrast",
-                           onclick=f"return confirm('Eliminare definitivamente \\'{m['question']}\\'?{warn}')"),
-                    action=f"/admin/delete/{m['id']}",
-                    method="post",
-                    style="margin:0",
+                Div(
+                    A("Gestisci", href=f"/admin/market/{m['id']}",
+                      role="button", cls="secondary", style="margin:0"),
+                    Form(
+                        Button("Elimina", type="submit",
+                               cls="contrast",
+                               onclick=f"return confirm('Eliminare definitivamente \\'{m['question']}\\'?{warn}')"),
+                        action=f"/admin/delete/{m['id']}",
+                        method="post",
+                        style="margin:0",
+                    ),
+                    style="display:flex; gap:.4rem; align-items:center",
                 ),
             ),
         ))
@@ -752,6 +757,100 @@ def post(sess, mid: str):
     except ValueError as e:
         return RedirectResponse(f"/admin?err={e}", status_code=303)
     return RedirectResponse(f"/admin?ok=Mercato+{mid}+eliminato", status_code=303)
+
+
+# --- gestione singolo mercato (prezzo + trade) ----------------------------
+
+@rt("/admin/market/{mid}")
+def get(sess, mid: str, err: str = "", ok: str = ""):
+    user = current_user(sess)
+    if not is_admin(user):
+        return RedirectResponse("/", status_code=303)
+    m = db.get_market(mid)
+    if not m:
+        return RedirectResponse("/admin?err=Mercato+non+trovato", status_code=303)
+
+    p_yes = mkt.price_yes(m["q_yes"], m["q_no"], m["liquidity"])
+
+    trade_rows = [
+        Tr(
+            Td(t["ts"].replace("T", " ").rstrip("Z")),
+            Td(t["username"]),
+            Td(f"{'BUY' if t['shares']>0 else 'SELL'} {t['side']}"),
+            Td(f"{abs(t['shares']):.2f}"),
+            Td(f"{t['cost']:+.2f}"),
+            Td(f"{t['price_yes_after']*100:.1f}%"),
+            Td(Form(
+                Button("Annulla", type="submit", cls="contrast",
+                       onclick="return confirm('Annullare questo trade? Verranno stornati "
+                               "saldo, posizione e quota.')"),
+                action=f"/admin/trade/{t['id']}/delete?mid={mid}",
+                method="post", style="margin:0",
+            )),
+        )
+        for t in db.market_trades(mid)
+    ]
+
+    msg = None
+    if err: msg = ("err", err)
+    elif ok: msg = ("ok", ok)
+
+    return page(
+        user, f"Admin · {m['question']}",
+        H2(m["question"]),
+        P(Small(m["id"], style="color:#8b97a4")),
+        Div(
+            H4("Imposta chance YES", style="margin-top:0"),
+            P(f"Chance YES attuale: ", B(f"{p_yes*100:.1f}%")),
+            Form(
+                Input(name="p_yes", type="number", min="0.1", max="99.9", step="0.1",
+                      value=f"{p_yes*100:.1f}", required=True,
+                      style="width:8rem; display:inline-block"),
+                Span(" %  ", style="color:#8b97a4"),
+                Button("Imposta prezzo", type="submit"),
+                action=f"/admin/market/{mid}/price",
+                method="post",
+                style="display:flex; gap:.5rem; align-items:center; margin:0",
+            ),
+            P(Small("Override della quota di mercato (LMSR). Non modifica i token "
+                    "gia' posseduti dagli utenti.")),
+            cls="trade-panel",
+        ),
+        H4("Trade del mercato"),
+        Table(
+            Thead(Tr(Th("Quando"), Th("Utente"), Th("Op"), Th("Shares"),
+                     Th("Costo"), Th("Chance dopo"), Th("Azione"))),
+            Tbody(*trade_rows) if trade_rows else Tbody(Tr(Td("Nessun trade", colspan="7"))),
+        ),
+        P(A("torna all'admin", href="/admin")),
+        msg=msg,
+    )
+
+
+@rt("/admin/market/{mid}/price")
+def post(sess, mid: str, p_yes: float):
+    user = current_user(sess)
+    if not is_admin(user):
+        return RedirectResponse("/", status_code=303)
+    try:
+        db.set_market_price(mid, p_yes / 100.0)
+    except ValueError as e:
+        return RedirectResponse(f"/admin/market/{mid}?err={e}", status_code=303)
+    return RedirectResponse(
+        f"/admin/market/{mid}?ok=Chance+YES+impostata+a+{p_yes:.1f}%25", status_code=303)
+
+
+@rt("/admin/trade/{trade_id}/delete")
+def post(sess, trade_id: int, mid: str = ""):
+    user = current_user(sess)
+    if not is_admin(user):
+        return RedirectResponse("/", status_code=303)
+    try:
+        db.delete_trade(trade_id)
+    except ValueError as e:
+        return RedirectResponse(f"/admin/market/{mid}?err={e}", status_code=303)
+    dest = f"/admin/market/{mid}" if mid else "/admin"
+    return RedirectResponse(f"{dest}?ok=Trade+annullato", status_code=303)
 
 
 # --- crea mercato ---------------------------------------------------------
