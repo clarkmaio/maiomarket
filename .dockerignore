@@ -6,3 +6,7 @@ __pycache__/
 *.db-wal
 .git/
 DEPLOY.md
+deploy.sh
+deploy-git.sh
+requirements-dev.txt
+.secret

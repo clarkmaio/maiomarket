@@ -4,7 +4,7 @@
 #
 # Uso:
 #   ./deploy.sh <utente>/<nome-space>
-#   es.  ./deploy.sh andrea/maiomarket
+#   es.  ./deploy.sh clarkmaio/maiomarket
 #
 # Prerequisiti:
 #   pip install huggingface_hub
@@ -19,7 +19,7 @@ set -euo pipefail
 
 SPACE_ID="${1:-${HF_SPACE_ID:-}}"
 if [ -z "$SPACE_ID" ]; then
-  echo "Uso: ./deploy.sh <utente>/<nome-space>   (es. ./deploy.sh andrea/maiomarket)"
+  echo "Uso: ./deploy.sh <utente>/<nome-space>   (es. ./deploy.sh clarkmaio/maiomarket)"
   exit 1
 fi
 

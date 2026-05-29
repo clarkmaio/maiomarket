@@ -35,7 +35,7 @@ export TURSO_DATABASE_URL="libsql://..."
 export TURSO_AUTH_TOKEN="..."
 export SESSION_SECRET="una-stringa-lunga-e-casuale"
 
-./deploy.sh <utente>/maiomarket        # es. ./deploy.sh andrea/maiomarket
+./deploy.sh clarkmaio/maiomarket
 ```
 
 Lo script crea lo Space (Docker) se non esiste, carica i file ed eventualmente
