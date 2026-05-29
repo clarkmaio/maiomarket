@@ -165,6 +165,7 @@ app, rt = fast_app(
             .ok  { background: rgba(39,174,96,.12); border: 1px solid rgba(39,174,96,.4);
                    color: #3fb950; padding: .5rem 1rem; border-radius: 6px; }
             svg.chart { width: 100%; height: 260px; background:#0d1424; border:none; border-radius:6px; }
+            .trade-btn[aria-busy="true"] { pointer-events:none; }
 
             /* ---- pagina mercato: layout a due colonne ---- */
             .market-layout { display:flex; gap:1.5rem; align-items:flex-start; }
@@ -203,6 +204,26 @@ app, rt = fast_app(
             .amount-row label { font-weight:700; color:#e6e9ef; display:block; margin-bottom:.3rem; }
             .amount-row input { margin:0; }
             .trade-btn { width:100%; margin:0; }
+        """),
+        # Al submit del form di trade: disabilita il bottone e mostra lo spinner
+        # (aria-busy di Pico) per impedire doppi click. La risposta e' un redirect
+        # a pagina piena, quindi al ricaricamento il bottone torna attivo da solo.
+        Script("""
+            document.addEventListener('submit', function (e) {
+                var f = e.target;
+                if (!f || f.id !== 'trade-form') return;
+                if (f.dataset.submitting === '1') { e.preventDefault(); return; }
+                f.dataset.submitting = '1';
+                var btn = f.querySelector('button[type=submit]');
+                if (btn) {
+                    // differito: lasciamo partire questa submit prima di disabilitare
+                    setTimeout(function () {
+                        btn.setAttribute('aria-busy', 'true');
+                        btn.textContent = 'Eseguo...';
+                        btn.disabled = true;
+                    }, 0);
+                }
+            }, true);
         """),
     ),
 )
@@ -472,6 +493,7 @@ def get(sess, mid: str, err: str = "", ok: str = "", side: str = ""):
             method="post",
             action=f"/market/{mid}/trade",
             cls="trade-panel",
+            id="trade-form",
         )
 
     resolve_block = ()
