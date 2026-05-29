@@ -1,0 +1,3 @@
+python-fasthtml>=0.6.0
+PyYAML>=6.0
+libsql          # client Turso/libSQL (usato solo se TURSO_DATABASE_URL e' impostata)

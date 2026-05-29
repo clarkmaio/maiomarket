@@ -1,0 +1,17 @@
+settings:
+  initial_balance: 1000.0
+  session_secret: "cambia-questa-stringa-segreta"
+
+users:
+  - username: andrea
+    password: andrea
+    admin: true
+  - username: test
+    password: test
+    admin: false
+markets:
+  - id: gara-trazioni
+    question: "Simone fara' piu trazioni di Andrea a Natale 2026"
+    expires: "2026-12-31"
+    liquidity: 100
+

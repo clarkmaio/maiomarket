@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"import fasthtml\")",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 app.py)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5001/login)",
+      "Bash(set -e)",
+      "Bash(curl -s -c /tmp/mm.cookies -b /tmp/mm.cookies -L -X POST -d 'username=alice&password=alice123' http://localhost:5001/login -o /tmp/mm_home.html -w 'login_status=%{http_code}\\\\n')",
+      "Read(//tmp/**)",
+      "Bash(curl -s -b /tmp/mm.cookies http://localhost:5001/market/trump-2028 -o /tmp/mm_market.html -w \"market_status=%{http_code}\\\\n\")",
+      "Bash(curl -s -b /tmp/mm.cookies -X POST -d 'side=YES&action=BUY&shares=20' http://localhost:5001/market/trump-2028/trade -L -o /tmp/mm_after.html -w 'trade_status=%{http_code}\\\\n')",
+      "Bash(python -m py_compile app.py)",
+      "Bash(python -m py_compile app.py db.py)",
+      "Bash(.venv/bin/python -c ' *)",
+      "Bash(.venv/bin/python -c \"from fasthtml.common import Nav, Script; print\\('Nav/Script OK'\\)\")"
+    ]
+  }
+}
