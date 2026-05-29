@@ -9,6 +9,10 @@ users:
   - username: test
     password: test
     admin: false
+  - username: simone
+    password: simone
+    admin: false
+
 markets:
   - id: gara-trazioni
     question: "Simone fara' piu trazioni di Andrea a Natale 2026"

@@ -208,6 +208,17 @@ def init_db(users: list[dict], markets: list[dict], initial_balance: float):
                 (m["id"], now_iso()),
             )
 
+        # Garantisce una riga 'positions' per ogni (utente, mercato) esistente:
+        # cosi' anche un utente aggiunto a config.yaml in un secondo momento puo'
+        # operare sui mercati gia' creati (config o da UI admin).
+        existing = c.execute("SELECT id FROM markets").fetchall()
+        for u in users:
+            for mk in existing:
+                c.execute(
+                    "INSERT OR IGNORE INTO positions(username, market_id) VALUES (?, ?)",
+                    (u["username"], mk["id"]),
+                )
+
 
 def get_balance(username: str) -> float:
     with conn() as c:
@@ -288,8 +299,11 @@ def record_trade(
         )
         col = "yes_shares" if side.upper() == "YES" else "no_shares"
         c.execute(
-            f"UPDATE positions SET {col} = {col} + ? WHERE username=? AND market_id=?",
-            (shares, username, market_id),
+            f"""INSERT INTO positions(username, market_id, {col})
+                VALUES (?, ?, ?)
+                ON CONFLICT(username, market_id)
+                DO UPDATE SET {col} = {col} + excluded.{col}""",
+            (username, market_id, shares),
         )
         c.execute(
             """INSERT INTO trades(ts, market_id, username, side, shares, cost, price_yes_after)
