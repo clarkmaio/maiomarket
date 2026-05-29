@@ -12,7 +12,30 @@ users:
   - username: simone
     password: simone
     admin: false
-
+  - username: giovanni
+    password: giovanni
+    admin: false
+  - username: giacomo
+    password: giacomo
+    admin: false
+  - username: anna
+    password: anna
+    admin: false
+  - username: maddalena
+    password: maddalena
+    admin: false
+  - username: matteo
+    password: matteo
+    admin: false
+  - username: marta
+    password: marta
+    admin: false
+  - username: stefano
+    password: stefano
+    admin: false
+  - username: elisabetta
+    password: elisabetta
+    admin: false
 markets:
   - id: gara-trazioni
     question: "Simone fara' piu trazioni di Andrea a Natale 2026"
