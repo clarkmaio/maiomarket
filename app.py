@@ -29,6 +29,12 @@ SETTINGS = CFG.get("settings", {})
 INITIAL_BALANCE = float(SETTINGS.get("initial_balance", 1000.0))
 SESSION_SECRET = os.environ.get("SESSION_SECRET") or SETTINGS.get("session_secret", "dev-secret-change-me")
 
+# PORT e' impostata nel Dockerfile -> ci dice se giriamo nel container HF.
+# Su HF lo Space e' servito in HTTPS dentro un iframe (dominio diverso), quindi
+# il cookie di sessione deve essere SameSite=None + Secure per essere accettato.
+# In locale (http) restiamo su Lax non-secure, altrimenti il cookie non parte.
+IN_CONTAINER = bool(os.environ.get("PORT"))
+
 USERS = {u["username"]: u for u in CFG.get("users", [])}
 MARKETS_CFG = CFG.get("markets", [])
 
@@ -61,6 +67,8 @@ app, rt = fast_app(
     before=bware,
     pico=True,
     htmlkw=dict(data_theme="dark"),
+    same_site="none" if IN_CONTAINER else "lax",
+    sess_https_only=IN_CONTAINER,
     hdrs=(
         Style("""
             /* ---- Tema scuro: palette stile Polymarket ---- */
